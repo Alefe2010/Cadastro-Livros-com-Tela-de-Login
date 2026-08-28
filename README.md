@@ -44,6 +44,8 @@ Este é um projeto de uma aplicação web para gerenciamento de livros (CRUD com
 ├── .env                 # Arquivo de variáveis de ambiente (Chave secreta do JWT)
 ├── .env.example         # Exemplo de configuração de ambiente
 ├── .gitignore           # Arquivos e pastas ignorados pelo Git
+├── package.json         # Dependências e scripts do Node.js
+└── server.js            # Servidor Express, rotas e middlewares
 ```
 
 ## 🚀 Como Executar o Projeto
