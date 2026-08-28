@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Livros</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 0 20px; line-height: 1.6; }
+        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px; }
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        button{ padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; }
+        a {padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; text-decoration: none;}
+        button:active, a:active {scale: 0.9; opacity: 0.9;}
+        .btn-get { background-color: #28a745; }
+        .btn-post { background-color: #007bff; }
+        .btn-put { background-color: #ffc107; color: black; }
+        .btn-patch { background-color: #17a2b8; }
+        .btn-delete { background-color: #dc3545; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Cadastro de Livros</h1>
+    
+    <div class="controls">
+        <input type="text" id="isbnLivro"  placeholder="ISBN">
+        <input type="text" id="nomeLivro"  placeholder="Nome Livro">
+        <select id="categoriaLivros">
+            <option value="Romance">Romance</option>
+            <option value="Ação">Ação</option>
+            <option value="Aventura">Aventura</option>
+            <option value="Didáticos">Didáticos</option>
+        </select>
+        <button class="btn-post" onclick="handlePost()">Insere</button>
+        <button class="btn-get" onclick="handleGet()">Listar livros</button>
+        <a href="/logout" class=" btn-delete">Sair</a>
+    </div>
+    <div id="itemsList"></div>
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        // GET - Listar Itens
+        async function handleGet() {
+            try {
+                const response = await fetch(`${API_URL}/livros`, {
+                    credentials: "same-origin"
+                })
+
+                const data = await response.json();
+                renderItems(data);
+            } catch (error) {
+                console.error('Erro no GET:', error);
+            }
+        }
+
+        // POST - Criar Item
+        async function handlePost() {
+           
+           const isbnLivro = document.getElementById("isbnLivro").value;
+           const nomeLivro = document.getElementById("nomeLivro").value;
+           const categoriaLivro = document.getElementById("categoriaLivros").value;
+           
+           if (!isbnLivro) {
+              alert("Digite um ISBN");
+              return;
+           }
+
+           if (!nomeLivro) {
+             alert("Digite o nome do livro");
+           return;
+           }
+           
+           try {
+            const response = await fetch("http://localhost:3000/livros", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+               isbnLivro,
+               nomeLivro,
+               categoriaLivro
+            })
+          });
+         
+           if (!response.ok) {
+              throw new Error("Erro ao cadastrar livro.");
+            }
+         
+            document.getElementById("isbnLivro").value = "";
+            document.getElementById("nomeLivro").value = "";
+            document.getElementById("categoriaLivros").selectedIndex = 0;
+
+            handleGet();
+            } catch (error) {
+             console.error(error);
+        }
+}
+ 
+        // PUT - Atualizar Completo
+        async function handlePut(id) {
+            const newName = prompt('Novo nome (PUT - Substituição completa):');
+            const newISBN = prompt('Novo ISBN (PUT - Substituição completa):');
+            if (!newName) return;
+            if (!newISBN) return;
+            
+            try {
+                await fetch(`${API_URL}/livros/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newName, iSBN: newISBN})
+                });
+                handleGet();
+            } catch (error) {
+                console.error('Erro no PUT:', error);
+            }
+        }
+
+        // PATCH - Atualizar Parcial
+        async function handlePatch(id) {
+            const newName = prompt('Novo nome (PATCH - Atualização parcial):');
+            if (!newName) return;
+
+            try {
+                await fetch(`${API_URL}/livros/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newName })
+                });
+                handleGet();
+            } catch (error) {
+                console.error('Erro no PATCH:', error);
+            }
+        }
+
+        // DELETE - Remover
+        async function handleDelete(id) {
+           if (!confirm('Deseja excluir este item?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/livros/${id}`, {
+                    method: 'DELETE'
+                });
+                if(!response.ok) {
+                    console.error(`Erro na requisição: Status ${response.status} (${response.statusText})`);
+                    alert(`Falha ao deletar! O servidor respondeu com código ${response.status}`);
+                }
+                setTimeout(() => {
+                    alert('Livro deletado!')
+                }, 2000)
+                handleGet()
+            } catch (error) {
+                console.error('Erro de conexão com o servidor:', error);
+            }
+        }
+
+        function renderItems(items) {
+           const list = document.getElementById('itemsList');
+            list.innerHTML = items.map(item => `
+                <div class="card">
+                    <strong>ISBN: ${item.isbnLivro}</strong> - ${item.nomeLivro}
+                    <div style="margin-top: 10px;">
+                        <button class="btn-put" onclick="handlePut(${item.isbnLivro})">PUT</button>
+                        <button class="btn-patch" onclick="handlePatch(${item.isbnLivro})">PATCH</button>
+                        <button class="btn-delete" onclick="handleDelete(${item.isbnLivro})">DELETE</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Inicializar lista
+        handleGet();
+    </script>
+</body>
+</html>
